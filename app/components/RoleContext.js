@@ -4,7 +4,12 @@ import { createContext, useContext, useState } from "react";
 const RoleContext = createContext();
 
 export const RoleProvider = ({ children }) => {
-  const [user, setUser] = useState(null); // null = logged out
+  // ✅ Default user (for now) so Sidebar appears
+  const [user, setUser] = useState({
+    role: "Admin",
+    name: "Demo User",
+  });
+
   return (
     <RoleContext.Provider value={{ user, setUser }}>
       {children}

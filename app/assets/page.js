@@ -1,6 +1,7 @@
 "use client";
 import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
+import BottomNavBar from "../components/BottomNavBar"; // ✅ Added
 import {
   Car,
   Battery,
@@ -27,7 +28,7 @@ import {
   Legend,
 } from "recharts";
 
-/* -------------------- DUMMY CUSTOMER DATA -------------------- */
+/* -------------------- DUMMY DATA -------------------- */
 const subscriptionStats = [
   { name: "Active", value: 64 },
   { name: "Expired", value: 21 },
@@ -75,9 +76,11 @@ export default function AssetsPage() {
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-emerald-50 via-white to-green-50">
       <Sidebar />
-      <div className="flex-1 flex flex-col">
+
+      <div className="flex-1 flex flex-col md:ml-[260px]">
         <Navbar />
-        <main className="p-8">
+
+        <main className="p-8 pb-24 md:pb-8 transition-all duration-300">
           <h2 className="text-3xl font-bold text-gray-800">
             Assets Overview <span className="text-emerald-600">⚙️</span>
           </h2>
@@ -111,7 +114,6 @@ export default function AssetsPage() {
           {/* VEHICLES SECTION */}
           {activeTab === "Vehicles" && (
             <section className="mt-10">
-              {/* 🔍 Modern Filter Section */}
               <div className="bg-white rounded-2xl shadow-md p-6 border border-emerald-100">
                 <div className="flex items-center justify-between mb-5">
                   <div className="flex items-center gap-3">
@@ -157,31 +159,11 @@ export default function AssetsPage() {
 
               {/* Stats Section */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mt-8">
-                <StatCard
-                  title="Vehicles Count"
-                  value={vehicleStats.total}
-                  desc="Total registered"
-                />
-                <StatCard
-                  title="Seen in last 24h"
-                  value={`${vehicleStats.seen24h}%`}
-                  desc="Active recently"
-                />
-                <StatCard
-                  title="Swapped in last 3d"
-                  value={`${vehicleStats.swapped3d}%`}
-                  desc="Battery swap activity"
-                />
-                <StatCard
-                  title="Plan ended >3d ago"
-                  value={`${vehicleStats.planEnded}%`}
-                  desc="Expired plans"
-                />
-                <StatCard
-                  title="Defective vehicles"
-                  value={`${vehicleStats.defective}%`}
-                  desc="Under maintenance"
-                />
+                <StatCard title="Vehicles Count" value={vehicleStats.total} desc="Total registered" />
+                <StatCard title="Seen in last 24h" value={`${vehicleStats.seen24h}%`} desc="Active recently" />
+                <StatCard title="Swapped in last 3d" value={`${vehicleStats.swapped3d}%`} desc="Battery swap activity" />
+                <StatCard title="Plan ended >3d ago" value={`${vehicleStats.planEnded}%`} desc="Expired plans" />
+                <StatCard title="Defective vehicles" value={`${vehicleStats.defective}%`} desc="Under maintenance" />
               </div>
             </section>
           )}
@@ -242,14 +224,12 @@ export default function AssetsPage() {
               </div>
             </section>
           )}
-
-          {/* PLACEHOLDER for Other Tabs */}
-          {activeTab !== "Vehicles" && activeTab !== "Customers" && (
-            <div className="mt-10 text-gray-400 italic">
-              {`The ${activeTab} dashboard will be added soon.`}
-            </div>
-          )}
         </main>
+
+        {/* ✅ Bottom Nav for mobile only */}
+        <div className="md:hidden fixed bottom-0 left-0 right-0 z-50">
+          <BottomNavBar />
+        </div>
       </div>
     </div>
   );

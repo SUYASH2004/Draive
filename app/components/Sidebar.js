@@ -1,77 +1,154 @@
 "use client";
-import Link from "next/link";
-import { useRole } from "./RoleContext";
 import { useState } from "react";
-import { Menu, X } from "lucide-react";
+import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  X,
+  Home,
+  Package,
+  ClipboardList,
+  Wrench,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
+import { useRole } from "./RoleContext";
 
-export default function Sidebar() {
+export default function Sidebar({ isOpen, onClose, onCollapse }) {
   const { user } = useRole();
-  const [isOpen, setIsOpen] = useState(true); // toggle sidebar for mobile
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
-  if (!user) return null; // hide sidebar when not logged in
+  const menu = [
+    { href: "/home", label: "Home", icon: Home },
+    { href: "/assets", label: "Assets", icon: Package },
+    { href: "/plans", label: "Plans", icon: ClipboardList },
+    { href: "/workorders", label: "Work Orders", icon: Wrench },
+  ];
 
-  const menu = {
-    Admin: [
-      { href: "/home", label: "Home" },
-      { href: "/assets", label: "Assets" },
-      { href: "/plans", label: "Plans" },
-      { href: "/workorders", label: "Work Orders" },
-    ],
-    Technician: [
-      { href: "/assets", label: "Assets" },
-      { href: "/workorders", label: "Work Orders" },
-    ],
-    Support: [{ href: "/plans", label: "Plans" }],
+  const toggleCollapse = () => {
+    const newState = !isCollapsed;
+    setIsCollapsed(newState);
+    if (onCollapse) onCollapse(newState);
   };
-
-  const links = menu[user.role] || [];
 
   return (
     <>
-      {/* Mobile Toggle Button */}
-      <button
-        className="fixed top-4 left-4 z-50 bg-emerald-600 text-white p-2 rounded-lg shadow-md md:hidden"
-        onClick={() => setIsOpen(!isOpen)}
+      {/* --- Desktop Sidebar (collapsible) --- */}
+      <motion.aside
+        animate={{ width: isCollapsed ? 80 : 260 }}
+        transition={{ duration: 0.15, ease: "linear" }} // 🔥 faster transition
+        className="hidden md:flex fixed left-0 top-0 h-full bg-white/90 backdrop-blur-md border-r border-emerald-100 shadow-lg flex-col z-40"
       >
-        {isOpen ? <X size={20} /> : <Menu size={20} />}
-      </button>
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-4 border-b border-gray-100">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-xl flex items-center justify-center text-white font-bold">
+              ⚡
+            </div>
+            {!isCollapsed && (
+              <h2 className="text-lg font-bold text-emerald-700 transition-all duration-100">
+                Voltup Draive
+              </h2>
+            )}
+          </div>
 
-      {/* Sidebar */}
-      <aside
-        className={`fixed top-0 left-0 h-full bg-white/90 backdrop-blur-md border-r border-emerald-100 shadow-md transition-all duration-300 z-40 ${
-          isOpen ? "w-64" : "w-0 md:w-64"
-        } overflow-hidden`}
-      >
-        <div className="p-6 border-b border-gray-100">
-          <h2 className="text-xl font-bold bg-gradient-to-r from-emerald-600 to-emerald-800 bg-clip-text text-transparent">
-            Voltup Draive
-          </h2>
-          <p className="text-xs text-gray-500 mt-1">
-            EV Management Platform
-          </p>
+          <button
+            onClick={toggleCollapse}
+            className="p-2 rounded-lg hover:bg-emerald-50"
+          >
+            {isCollapsed ? (
+              <ChevronRight size={18} />
+            ) : (
+              <ChevronLeft size={18} />
+            )}
+          </button>
         </div>
 
-        {/* Navigation */}
-        <nav className="flex flex-col gap-1 mt-4 px-3">
-          {links.map(({ href, label }) => (
+        {/* Menu Links */}
+        <nav className="flex-1 flex flex-col mt-4 px-2 gap-2 overflow-y-auto scrollbar-thin scrollbar-thumb-emerald-100">
+          {menu.map(({ href, label, icon: Icon }) => (
             <Link
               key={href}
               href={href}
-              className="text-gray-700 font-medium px-4 py-2 rounded-lg hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
+              className="group flex items-center gap-3 px-3 py-2.5 text-gray-700 font-medium rounded-lg hover:bg-emerald-50 hover:text-emerald-700 transition-all relative"
             >
-              {label}
+              <Icon size={20} />
+              {!isCollapsed && <span>{label}</span>}
+              {isCollapsed && (
+                <span className="absolute left-14 bg-gray-800 text-white text-xs px-2 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                  {label}
+                </span>
+              )}
             </Link>
           ))}
         </nav>
-      </aside>
 
-      {/* Overlay for mobile */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 bg-black/20 z-30 md:hidden"
-          onClick={() => setIsOpen(false)}
-        ></div>
-      )}
+        {/* Footer */}
+        <div className="border-t border-gray-100 p-3 text-xs text-gray-500 text-center">
+          {isCollapsed ? "⚡" : "© 2025 Voltup"}
+        </div>
+      </motion.aside>
+
+      {/* --- Mobile Sidebar (slide-in) --- */}
+      <AnimatePresence>
+        {isOpen && (
+          <>
+            <motion.aside
+              initial={{ x: -300 }}
+              animate={{ x: 0 }}
+              exit={{ x: -300 }}
+              transition={{ duration: 0.2, ease: "easeOut" }} // ⚡ faster mobile open/close
+              className="fixed top-0 left-0 h-full w-[260px] bg-white/95 backdrop-blur-md border-r border-emerald-100 shadow-2xl z-50 flex flex-col md:hidden"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-xl flex items-center justify-center text-white font-bold">
+                    ⚡
+                  </div>
+                  <h2 className="text-lg font-bold text-emerald-700">
+                    Voltup Draive
+                  </h2>
+                </div>
+                <button
+                  className="p-2 rounded-lg hover:bg-emerald-50"
+                  onClick={onClose}
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Menu */}
+              <nav className="flex-1 flex flex-col mt-4 px-4 gap-2 overflow-y-auto scrollbar-thin scrollbar-thumb-emerald-100">
+                {menu.map(({ href, label, icon: Icon }) => (
+                  <Link
+                    key={href}
+                    href={href}
+                    onClick={onClose}
+                    className="flex items-center gap-3 px-3 py-2.5 text-gray-700 font-medium rounded-lg hover:bg-emerald-50 hover:text-emerald-700 transition-all"
+                  >
+                    <Icon size={20} />
+                    <span>{label}</span>
+                  </Link>
+                ))}
+              </nav>
+
+              <div className="border-t border-gray-100 p-3 text-xs text-gray-500 text-center">
+                © 2025 Voltup
+              </div>
+            </motion.aside>
+
+            {/* Overlay */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.3 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              onClick={onClose}
+              className="fixed inset-0 bg-black z-40 md:hidden"
+            />
+          </>
+        )}
+      </AnimatePresence>
     </>
   );
 }

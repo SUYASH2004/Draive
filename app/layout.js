@@ -1,27 +1,18 @@
-import { Geist, Geist_Mono } from "next/font/google";
+"use client";
 import "./globals.css";
 import { RoleProvider } from "./components/RoleContext";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
-export const metadata = {
-  title: "VoltUp Draive",
-  description: "EV Battery Swapping Portal",
-};
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <RoleProvider>{children}</RoleProvider>
+      <head>
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#059669" />
+      </head>
+      <body className="bg-gradient-to-br from-emerald-50 via-white to-green-50 min-h-screen">
+        <RoleProvider>
+          {children}
+        </RoleProvider>
       </body>
     </html>
   );

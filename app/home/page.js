@@ -1,39 +1,57 @@
 "use client";
+import { useState } from "react";
 import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
 import KPISection from "../components/KPISection";
+import BottomNavBar from "../components/BottomNavBar";
 
 export default function HomePage() {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-emerald-50 via-white to-green-50">
-      <Sidebar />
+    <div className="flex min-h-screen bg-gray-50 transition-all duration-300">
+      {/* Sidebar */}
+      <Sidebar
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+        onCollapse={(collapsed) => setIsSidebarCollapsed(collapsed)}
+      />
 
-      <div className="flex-1 flex flex-col">
-        <Navbar />
+      {/* Main Area */}
+      <div
+        className={`flex-1 flex flex-col transition-all duration-300 ${
+          isSidebarCollapsed ? "md:ml-[80px]" : "md:ml-[260px]"
+        }`}
+      >
+        {/* Navbar */}
+        <Navbar onMenuClick={() => setIsSidebarOpen(true)} />
 
-        <main className="p-8">
-          <h2 className="text-3xl font-bold text-gray-800">
-            Welcome to <span className="text-emerald-600">Voltup Draive Dashboard</span> ⚡
-          </h2>
-          <p className="text-gray-500 mt-2">
-            Monitor your EV ecosystem performance and operations efficiently.
-          </p>
+        {/* Page Content */}
+        <main className="p-6 mt-4">
+          <header className="mb-8 text-center md:text-left">
+            <h1 className="text-3xl md:text-4xl font-extrabold text-gray-800">
+              Welcome to{" "}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-green-700">
+                Voltup Draive Dashboard
+              </span>{" "}
+              ⚡
+            </h1>
+            <p className="text-gray-500 mt-2 text-base md:text-lg">
+              Track and manage your EV ecosystem — assets, plans, and operations
+              in one glance.
+            </p>
+          </header>
 
-          {/* KPI Cards */}
-          <KPISection />
-
-          {/* Recent Activity Section */}
-          <section className="mt-10">
-            <h3 className="text-xl font-semibold mb-4 text-gray-700">Recent Activity</h3>
-            <div className="bg-white rounded-2xl shadow-md p-6">
-              <ul className="space-y-3 text-gray-600">
-                <li>🔋 Asset EV001 battery health updated to 94%</li>
-                <li>🧾 New work order assigned to technician Rahul</li>
-                <li>🚗 Customer “GreenFleet Pvt Ltd” subscribed to Pro Plan</li>
-              </ul>
-            </div>
+          <section className="mb-10">
+            <KPISection />
           </section>
         </main>
+
+        {/* Mobile Bottom Navbar */}
+        <div className="md:hidden">
+          <BottomNavBar />
+        </div>
       </div>
     </div>
   );
