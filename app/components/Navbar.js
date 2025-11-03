@@ -1,9 +1,20 @@
 "use client";
 import { User, Settings, LogOut, Bell } from "lucide-react";
 import { useState } from "react";
+import { useRole } from "./RoleContext";
+import { useRouter } from "next/navigation";
 
 export default function Navbar() {
   const [showDropdown, setShowDropdown] = useState(false);
+  const { user, setUser } = useRole();
+  const router = useRouter();
+
+  // if (!user) return null; // Hide navbar if user not logged in
+
+  const handleLogout = () => {
+    setUser(null);
+    router.push("/");
+  };
 
   return (
     <nav className="flex justify-between items-center bg-white/70 backdrop-blur-md shadow-md px-6 py-3 border-b border-emerald-100 rounded-b-2xl sticky top-0 z-50">
@@ -45,9 +56,11 @@ export default function Navbar() {
             </div>
             <div className="text-left hidden sm:block">
               <p className="text-sm font-medium text-gray-900">
-                Admin User
+                {user?.email || "Admin User"}
               </p>
-              <p className="text-xs text-gray-500">Administrator</p>
+              <p className="text-xs text-gray-500">
+                {user?.role || "Administrator"}
+              </p>
             </div>
           </button>
 
@@ -61,7 +74,10 @@ export default function Navbar() {
                 <Settings size={16} /> Settings
               </button>
               <div className="border-t border-gray-100 my-1"></div>
-              <button className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors">
+              <button
+                onClick={handleLogout}
+                className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+              >
                 <LogOut size={16} /> Sign Out
               </button>
             </div>
@@ -71,9 +87,9 @@ export default function Navbar() {
 
       {/* Overlay to close dropdown */}
       {showDropdown && (
-        <div 
-          className="fixed inset-0 z-40" 
-          onClick={() => setShowDropdown(false)} 
+        <div
+          className="fixed inset-0 z-40"
+          onClick={() => setShowDropdown(false)}
         />
       )}
     </nav>

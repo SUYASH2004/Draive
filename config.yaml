@@ -1,0 +1,12 @@
+users:
+  - email: admin@voltup.com
+    password: voltup123
+    role: Admin
+
+  - email: tech@voltup.com
+    password: tech123
+    role: Technician
+
+  - email: support@voltup.com
+    password: support123
+    role: Support

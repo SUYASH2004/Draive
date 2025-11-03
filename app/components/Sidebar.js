@@ -1,91 +1,77 @@
 "use client";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import {
-  Home, Battery, FileText, Wrench, BarChart3,
-  Settings, ChevronLeft, ChevronRight
-} from "lucide-react";
+import { useRole } from "./RoleContext";
 import { useState } from "react";
+import { Menu, X } from "lucide-react";
 
 export default function Sidebar() {
-  const pathname = usePathname();
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const { user } = useRole();
+  const [isOpen, setIsOpen] = useState(true); // toggle sidebar for mobile
 
-  const navItems = [
-    { name: "Dashboard", icon: Home, path: "/home" },
-    { name: "Assets", icon: Battery, path: "/assets" },
-    { name: "Plans", icon: FileText, path: "/plans" },
-    { name: "Work Orders", icon: Wrench, path: "/workorders" },
-    { name: "Analytics", icon: BarChart3, path: "/analytics" },
-  ];
+  if (!user) return null; // hide sidebar when not logged in
 
-  const bottomItems = [
-    { name: "Settings", icon: Settings, path: "/settings" },
-  ];
+  const menu = {
+    Admin: [
+      { href: "/home", label: "Home" },
+      { href: "/assets", label: "Assets" },
+      { href: "/plans", label: "Plans" },
+      { href: "/workorders", label: "Work Orders" },
+    ],
+    Technician: [
+      { href: "/assets", label: "Assets" },
+      { href: "/workorders", label: "Work Orders" },
+    ],
+    Support: [{ href: "/plans", label: "Plans" }],
+  };
+
+  const links = menu[user.role] || [];
 
   return (
-    <aside
-      className={`relative h-screen bg-white/80 backdrop-blur-md shadow-xl rounded-r-2xl border-r border-emerald-100
-      transition-all duration-300 flex flex-col
-      ${isCollapsed ? "w-20" : "w-64"}`}
-    >
-      {/* Header */}
-      <div className="p-5 border-b border-emerald-50">
-        <div className="flex items-center justify-between">
-          {!isCollapsed && (
-            <h2 className="text-lg font-semibold text-emerald-800">Navigation</h2>
-          )}
-          <button
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            className="w-7 h-7 bg-emerald-500 hover:bg-emerald-600 border-2 border-white rounded-full flex items-center justify-center text-white shadow-lg"
-          >
-            {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
-          </button>
+    <>
+      {/* Mobile Toggle Button */}
+      <button
+        className="fixed top-4 left-4 z-50 bg-emerald-600 text-white p-2 rounded-lg shadow-md md:hidden"
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        {isOpen ? <X size={20} /> : <Menu size={20} />}
+      </button>
+
+      {/* Sidebar */}
+      <aside
+        className={`fixed top-0 left-0 h-full bg-white/90 backdrop-blur-md border-r border-emerald-100 shadow-md transition-all duration-300 z-40 ${
+          isOpen ? "w-64" : "w-0 md:w-64"
+        } overflow-hidden`}
+      >
+        <div className="p-6 border-b border-gray-100">
+          <h2 className="text-xl font-bold bg-gradient-to-r from-emerald-600 to-emerald-800 bg-clip-text text-transparent">
+            Voltup Draive
+          </h2>
+          <p className="text-xs text-gray-500 mt-1">
+            EV Management Platform
+          </p>
         </div>
-      </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-2">
-        {navItems.map(({ name, icon: Icon, path }) => {
-          const isActive = pathname === path;
-          return (
+        {/* Navigation */}
+        <nav className="flex flex-col gap-1 mt-4 px-3">
+          {links.map(({ href, label }) => (
             <Link
-              key={name}
-              href={path}
-              className={`
-                flex items-center gap-3 p-3 rounded-xl transition-all duration-200
-                ${isActive
-                  ? "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-lg"
-                  : "text-gray-600 hover:bg-emerald-50 hover:text-emerald-700"}
-                ${isCollapsed ? "justify-center" : ""}
-              `}
-              title={isCollapsed ? name : ""}
+              key={href}
+              href={href}
+              className="text-gray-700 font-medium px-4 py-2 rounded-lg hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
             >
-              <Icon size={20} />
-              {!isCollapsed && <span className="text-sm font-medium">{name}</span>}
+              {label}
             </Link>
-          );
-        })}
-      </nav>
+          ))}
+        </nav>
+      </aside>
 
-      {/* Bottom */}
-      <div className="p-4 border-t border-emerald-50 space-y-2">
-        {bottomItems.map(({ name, icon: Icon, path }) => (
-          <Link
-            key={name}
-            href={path}
-            className={`
-              flex items-center gap-3 p-3 rounded-xl text-gray-600
-              hover:bg-emerald-50 hover:text-emerald-700 transition-all
-              ${isCollapsed ? "justify-center" : ""}
-            `}
-            title={isCollapsed ? name : ""}
-          >
-            <Icon size={20} />
-            {!isCollapsed && <span className="text-sm font-medium">{name}</span>}
-          </Link>
-        ))}
-      </div>
-    </aside>
+      {/* Overlay for mobile */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-black/20 z-30 md:hidden"
+          onClick={() => setIsOpen(false)}
+        ></div>
+      )}
+    </>
   );
 }
