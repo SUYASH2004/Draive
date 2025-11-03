@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
 import KPISection from "../components/KPISection";
@@ -8,24 +8,41 @@ import BottomNavBar from "../components/BottomNavBar";
 export default function HomePage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   return (
     <div className="flex min-h-screen bg-gray-50 transition-all duration-300">
-      {/* Sidebar */}
-      <Sidebar
-        isOpen={isSidebarOpen}
-        onClose={() => setIsSidebarOpen(false)}
-        onCollapse={(collapsed) => setIsSidebarCollapsed(collapsed)}
-      />
+      {/* Sidebar only on desktop */}
+      {!isMobile && (
+        <Sidebar
+          isOpen={isSidebarOpen}
+          onClose={() => setIsSidebarOpen(false)}
+          onCollapse={(collapsed) => setIsSidebarCollapsed(collapsed)}
+        />
+      )}
 
       {/* Main Area */}
       <div
         className={`flex-1 flex flex-col transition-all duration-300 ${
-          isSidebarCollapsed ? "md:ml-[80px]" : "md:ml-[260px]"
+          !isMobile
+            ? isSidebarCollapsed
+              ? "md:ml-[80px]"
+              : "md:ml-[260px]"
+            : ""
         }`}
       >
-        {/* Navbar */}
-        <Navbar onMenuClick={() => setIsSidebarOpen(true)} />
+        <Navbar
+          onMenuClick={() => {
+            if (!isMobile) setIsSidebarOpen(true);
+          }}
+        />
 
         {/* Page Content */}
         <main className="p-6 mt-4">
@@ -49,9 +66,7 @@ export default function HomePage() {
         </main>
 
         {/* Mobile Bottom Navbar */}
-        <div className="md:hidden">
-          <BottomNavBar />
-        </div>
+        {isMobile && <BottomNavBar />}
       </div>
     </div>
   );

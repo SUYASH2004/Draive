@@ -10,3 +10,11 @@ users:
   - email: support@voltup.com
     password: support123
     role: Support
+
+  - email: regional@voltup.com
+    password: region123
+    role: Regional Head
+
+  - email: circle@voltup.com
+    password: circle123
+    role: Circle Head

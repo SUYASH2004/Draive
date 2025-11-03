@@ -1,13 +1,22 @@
 "use client";
-import { User, Bell, LogOut, Menu } from "lucide-react";
-import { useState } from "react";
+import { User, Bell, LogOut } from "lucide-react";
+import { useState, useEffect } from "react";
 import { useRole } from "./RoleContext";
 import { useRouter } from "next/navigation";
 
 export default function Navbar({ onMenuClick }) {
   const [showDropdown, setShowDropdown] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const { user, setUser } = useRole();
   const router = useRouter();
+
+  useEffect(() => {
+    // Check for mobile screen width
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   const handleLogout = () => {
     setUser(null);
@@ -68,13 +77,16 @@ export default function Navbar({ onMenuClick }) {
           )}
         </div>
 
-        {/* Mobile Hamburger (right side) */}
-        <button
-          onClick={onMenuClick}
-          className="md:hidden p-2 text-gray-700 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
-        >
-          <Menu size={22} />
-        </button>
+        {/* Hide Menu icon on mobile */}
+        {!isMobile && (
+          <button
+            onClick={onMenuClick}
+            className="p-2 text-gray-700 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
+          >
+            {/* no lucide-react import for Menu needed anymore */}
+            ☰
+          </button>
+        )}
       </div>
     </nav>
   );
