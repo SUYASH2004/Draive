@@ -1,71 +1,80 @@
-export const hierarchyData = {
-  regions: [
-    {
-      id: "north",
-      name: "North Region",
-      stats: {
-        activeCustomers: 1200,
-        activeStations: 84,
-        swapsToday: 560,
-        swapsWeek: 3120,
-      },
-      circles: [
-        {
-          id: "delhi-circle",
-          name: "Delhi Circle",
-          stats: {
-            activeCustomers: 450,
-            activeStations: 25,
-            swapsToday: 200,
-            swapsWeek: 1000,
-          },
-          cities: [
-            {
-              id: "delhi-city",
-              name: "Delhi",
-              clusters: [
-                { id: "connaught", name: "Connaught Place" },
-                { id: "dwarka", name: "Dwarka" },
-                { id: "noida", name: "Noida" },
-                { id: "gurgaon", name: "Gurgaon" },
-              ],
-            },
-          ],
-        },
-      ],
+// draive/app/data/hierarchy.js
+export const REGIONS = [
+  {
+    id: "west",
+    name: "West",
+    head: "Rajesh Sharma",
+    metrics: {
+      revenue: 12800000,
+      swaps: 48200,
+      uptime: 98.6,
+      stations: 220,
+      customers: 15800,
+      batteries: 32000,
     },
-    {
-      id: "south",
-      name: "South Region",
-      stats: {
-        activeCustomers: 950,
-        activeStations: 62,
-        swapsToday: 410,
-        swapsWeek: 2200,
+    series: [1200, 1400, 1500, 1600, 1700, 1800],
+    circles: [
+      {
+        id: "mumbai",
+        name: "Mumbai",
+        head: "Amit Patel",
+        metrics: { revenue: 4800000, swaps: 18200, uptime: 97.8, stations: 75, customers: 6200 },
+        series: [1200, 1250, 1300, 1350, 1400, 1450],
       },
-      circles: [
-        {
-          id: "bangalore-circle",
-          name: "Bangalore Circle",
-          stats: {
-            activeCustomers: 500,
-            activeStations: 30,
-            swapsToday: 220,
-            swapsWeek: 1100,
-          },
-          cities: [
-            {
-              id: "bangalore-city",
-              name: "Bangalore",
-              clusters: [
-                { id: "whitefield", name: "Whitefield" },
-                { id: "koramangala", name: "Koramangala" },
-                { id: "hebbal", name: "Hebbal" },
-              ],
-            },
-          ],
-        },
-      ],
+      {
+        id: "pune",
+        name: "Pune",
+        head: "Anjali Mehta",
+        metrics: { revenue: 3200000, swaps: 13200, uptime: 98.1, stations: 60, customers: 5600 },
+        series: [1000,1050,1100,1150,1180,1200],
+      },
+    ],
+  },
+  {
+    id: "north",
+    name: "North",
+    head: "Vikram Singh",
+    metrics: {
+      revenue: 9200000,
+      swaps: 38000,
+      uptime: 97.2,
+      stations: 180,
+      customers: 11200,
+      batteries: 22000,
     },
-  ],
-};
+    series: [900,950,1000,1050,1100,1150],
+    circles: [
+      {
+        id: "delhi",
+        name: "Delhi",
+        head: "Sunita Rao",
+        metrics: { revenue: 4200000, swaps: 21000, uptime: 97.5, stations: 80, customers: 7200 },
+        series: [700,720,740,760,780,800],
+      },
+    ],
+  },
+  {
+    id: "south",
+    name: "South",
+    head: "Kumar R",
+    metrics: { revenue: 7600000, swaps: 29000, uptime: 98.4, stations: 150, customers: 9000, batteries: 18000 },
+    series: [700,720,740,760,780,820],
+    circles: [],
+  },
+  {
+    id: "east",
+    name: "East",
+    head: "Meera Iyer",
+    metrics: { revenue: 4300000, swaps: 17000, uptime: 96.9, stations: 100, customers: 6500, batteries: 10000 },
+    series: [400,420,430,440,460,480],
+    circles: [],
+  },
+];
+
+export function findRegionById(id) {
+  return REGIONS.find((r) => r.id === id) || null;
+}
+export function findCircleById(regionId, circleId) {
+  const r = findRegionById(regionId);
+  return r ? (r.circles || []).find((c) => c.id === circleId) || null : null;
+}

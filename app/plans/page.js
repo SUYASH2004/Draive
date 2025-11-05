@@ -1,498 +1,413 @@
 "use client";
 
-import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { useRole } from "../components/RoleContext";
-import { hierarchyData } from "../data/hierarchyData";
+import React, { useMemo, useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { REGIONS, findRegionById } from "../data/hierarchyData";
+import AnalyticsCard from "./components/AnalyticsCard";
+import DataTable from "./components/DataTable";
+import BottomNavBar from "../components/BottomNavBar";
 import {
-  ArrowLeft,
-  Users,
-  Zap,
-  MapPin,
-  BatteryCharging,
-  TrendingUp,
-  AlertCircle,
-  Calendar,
-  Wrench,
-  MessageCircle,
-} from "lucide-react";
-import BottomNavBar from "../components/BottomNavBar"; // Make sure to import BottomNavBar
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+} from "recharts";
+import { Download, FileText, ArrowRight, Menu, X } from "lucide-react";
+import { saveAs } from "file-saver";
+import jsPDF from "jspdf";
+import { useRole } from "../components/RoleContext";
 
-export default function PlansPage() {
-  const { user } = useRole();
-  const [selectedRegion, setSelectedRegion] = useState(null);
-  const [selectedCircle, setSelectedCircle] = useState(null);
-  const [selectedCity, setSelectedCity] = useState(null);
-
-  if (!user) return <p className="text-center mt-10">Please log in first.</p>;
-
-  const goBack = () => {
-    if (selectedCity) return setSelectedCity(null);
-    if (selectedCircle) return setSelectedCircle(null);
-    if (selectedRegion) return setSelectedRegion(null);
-  };
-
-  // ---------- Reusable Components ----------
-  const StatCard = ({ icon: Icon, label, value, change, subtitle }) => (
-    <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-all">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm font-medium text-gray-600">{label}</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{value}</p>
-          {change && (
-            <p
-              className={`text-sm mt-1 ${
-                change >= 0 ? "text-green-600" : "text-red-600"
-              }`}
-            >
-              {change >= 0 ? "+" : ""}
-              {change}% from last month
-            </p>
-          )}
-          {subtitle && <p className="text-xs text-gray-500 mt-1">{subtitle}</p>}
-        </div>
-        <div className="p-3 rounded-full bg-emerald-50">
-          <Icon className="text-emerald-600" size={24} />
-        </div>
-      </div>
-    </div>
-  );
-
-  const Breadcrumbs = () => {
-    const path = [selectedRegion, selectedCircle, selectedCity]
-      .filter(Boolean)
-      .map((item) => item.name);
-    if (path.length === 0) return null;
-
-    return (
-      <div className="flex items-center gap-2 text-sm text-gray-500 mb-6">
-        <span className="text-gray-400">Hierarchy:</span>
-        {path.map((item, i) => (
-          <span key={i} className="font-medium text-emerald-600">
-            {i > 0 && <span className="text-gray-300 mx-1">/</span>}
-            {item}
-          </span>
-        ))}
-      </div>
-    );
-  };
-
-  const PerformanceMetric = ({ label, current, target, unit = "" }) => {
-    const percentage = target > 0 ? (current / target) * 100 : 0;
-    const color =
-      percentage >= 90
-        ? "bg-green-500"
-        : percentage >= 70
-        ? "bg-yellow-500"
-        : "bg-red-500";
-
-    return (
-      <div className="bg-white rounded-lg p-4 border border-gray-100">
-        <div className="flex justify-between mb-2">
-          <span className="text-sm font-medium text-gray-700">{label}</span>
-          <span className="text-sm font-bold text-emerald-700">
-            {current}
-            {unit} / {target}
-            {unit}
-          </span>
-        </div>
-        <div className="w-full bg-gray-200 rounded-full h-2">
-          <div
-            className={`h-2 rounded-full ${color}`}
-            style={{ width: `${Math.min(percentage, 100)}%` }}
-          ></div>
-        </div>
-        <div className="flex justify-between text-xs text-gray-500 mt-1">
-          <span>Progress</span>
-          <span>{percentage.toFixed(1)}%</span>
-        </div>
-      </div>
-    );
-  };
-
-  // ---------- Role-based Components ----------
-
-  const RegionOverview = ({ region }) => (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard
-          icon={Users}
-          label="Active Customers"
-          value={region.stats.activeCustomers.toLocaleString()}
-          change={12.5}
-          subtitle="Registered users"
-        />
-        <StatCard
-          icon={MapPin}
-          label="Active Stations"
-          value={region.stats.activeStations}
-          change={8.2}
-          subtitle="Operational stations"
-        />
-        <StatCard
-          icon={BatteryCharging}
-          label="Today's Swaps"
-          value={region.stats.swapsToday}
-          change={15.3}
-          subtitle="Real-time swaps"
-        />
-        <StatCard
-          icon={Zap}
-          label="Weekly Swaps"
-          value={region.stats.swapsWeek}
-          change={10.7}
-          subtitle="This week total"
-        />
-      </div>
-
-      {/* Metrics + Insights */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl p-6 border border-gray-100 shadow-sm">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            Performance Metrics
-          </h3>
-          <div className="space-y-4">
-            <PerformanceMetric
-              label="Station Utilization"
-              current={75}
-              target={100}
-              unit="%"
-            />
-            <PerformanceMetric label="Customer Growth" current={1200} target={1500} />
-            <PerformanceMetric
-              label="Swap Efficiency"
-              current={88}
-              target={95}
-              unit="%"
-            />
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl p-6 border border-gray-100 shadow-sm">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            Regional Insights
-          </h3>
-          {[
-            {
-              icon: TrendingUp,
-              color: "blue",
-              label: "Top Performing Circle",
-              value: "West Circle",
-            },
-            {
-              icon: AlertCircle,
-              color: "amber",
-              label: "Needs Attention",
-              value: "2 Circles",
-            },
-            {
-              icon: Calendar,
-              color: "emerald",
-              label: "Monthly Target",
-              value: "78% Achieved",
-            },
-          ].map(({ icon: Icon, color, label, value }) => (
-            <div
-              key={label}
-              className={`flex justify-between items-center p-3 rounded-lg bg-${color}-50 mb-3`}
-            >
-              <div className="flex items-center gap-3">
-                <Icon className={`text-${color}-600`} size={20} />
-                <span className="text-sm font-medium">{label}</span>
-              </div>
-              <span className={`text-sm font-bold text-${color}-700`}>{value}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Circles */}
-      <div className="bg-white rounded-xl p-6 border border-gray-100 shadow-sm">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Circles Overview</h3>
-        <div className="grid gap-4">
-          {region.circles.map((circle) => (
-            <motion.div
-              key={circle.id}
-              whileHover={{ scale: 1.01 }}
-              className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-emerald-300 hover:bg-emerald-50 cursor-pointer transition-all"
-              onClick={() => setSelectedCircle(circle)}
-            >
-              <div>
-                <h4 className="font-semibold text-gray-900">{circle.name}</h4>
-                <p className="text-sm text-gray-600">
-                  {circle.cities.length} cities •{" "}
-                  {circle.stats.activeCustomers.toLocaleString()} customers
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="text-sm font-medium text-gray-900">
-                  {circle.stats.swapsToday} swaps today
-                </p>
-                <p className="text-xs text-gray-500">
-                  {circle.stats.activeStations} active stations
-                </p>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-
-  const CircleOverview = ({ circle }) => (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard
-          icon={Users}
-          label="Active Customers"
-          value={circle.stats.activeCustomers.toLocaleString()}
-          change={8.3}
-        />
-        <StatCard
-          icon={MapPin}
-          label="Active Stations"
-          value={circle.stats.activeStations}
-          change={5.1}
-        />
-        <StatCard
-          icon={BatteryCharging}
-          label="Today's Swaps"
-          value={circle.stats.swapsToday}
-          change={12.7}
-        />
-        <StatCard
-          icon={Zap}
-          label="Weekly Swaps"
-          value={circle.stats.swapsWeek}
-          change={9.4}
-        />
-      </div>
-
-      {/* City Overview */}
-      <div className="bg-white rounded-xl p-6 border border-gray-100 shadow-sm">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          Cities in {circle.name}
-        </h3>
-        <div className="grid gap-4">
-          {circle.cities.map((city) => (
-            <motion.div
-              key={city.id}
-              whileHover={{ scale: 1.01 }}
-              className="p-4 border border-gray-200 rounded-lg hover:border-emerald-300 hover:bg-emerald-50 cursor-pointer"
-              onClick={() => setSelectedCity(city)}
-            >
-              <h4 className="font-semibold text-gray-900">{city.name}</h4>
-              <p className="text-sm text-gray-600">
-                {city.clusters.length} clusters •{" "}
-                {Math.floor(
-                  circle.stats.activeCustomers / circle.cities.length
-                ).toLocaleString()}{" "}
-                avg. customers
-              </p>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-
-  const CityOverview = ({ city }) => (
-    <div className="bg-white rounded-xl p-6 border border-gray-100 shadow-sm space-y-4">
-      <h3 className="text-lg font-semibold text-gray-900 mb-2">
-        Clusters in {city.name}
-      </h3>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {city.clusters.map((cluster) => (
-          <motion.div
-            key={cluster.id}
-            whileHover={{ scale: 1.02 }}
-            className="p-4 border border-gray-200 rounded-lg hover:border-emerald-300 hover:bg-emerald-50 cursor-pointer"
-          >
-            <h4 className="font-semibold text-gray-900 mb-2">{cluster.name}</h4>
-            <div className="text-sm text-gray-600 space-y-1">
-              <p>Stations: 8</p>
-              <p>
-                Status: <span className="text-emerald-600 font-medium">Active</span>
-              </p>
-              <p>Last Activity: 2 hours ago</p>
-            </div>
-          </motion.div>
-        ))}
-      </div>
-    </div>
-  );
-
-  // ---------- Role Handling ----------
-  const fullAccessRoles = ["Admin", "Regional Head"];
-  const circleAccessRoles = ["Circle Head"];
-  const taskBasedRoles = ["Technician", "Support"];
-
-  const renderHierarchyDashboard = () => (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-green-50 p-8 transition-all pb-20 md:pb-8"> {/* Added padding bottom for mobile */}
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-800">
-            ⚡ Voltup Hierarchy Dashboard
-          </h1>
-          <p className="text-gray-600 mt-2">
-            Welcome, {user.role} •{" "}
-            {selectedRegion ? selectedRegion.name : "Regional Overview"}
-          </p>
-        </div>
-        {(selectedRegion || selectedCircle || selectedCity) && (
-          <button
-            onClick={goBack}
-            className="flex items-center gap-2 bg-white px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition-all shadow-sm"
-          >
-            <ArrowLeft size={18} /> Back
-          </button>
-        )}
-      </div>
-
-      <Breadcrumbs />
-
-      <AnimatePresence mode="wait">
-        {!selectedRegion && fullAccessRoles.includes(user.role) && (
-          <motion.div
-            key="regions"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-          >
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {hierarchyData.regions.map((region) => (
-                <motion.div
-                  key={region.id}
-                  whileHover={{ scale: 1.02 }}
-                  onClick={() => setSelectedRegion(region)}
-                  className="bg-white border border-emerald-100 p-6 rounded-2xl shadow-sm hover:shadow-lg cursor-pointer"
-                >
-                  <h3 className="text-xl font-bold text-emerald-700 mb-3">
-                    {region.name}
-                  </h3>
-                  <div className="text-sm text-gray-600 space-y-1">
-                    <p>Circles: {region.circles.length}</p>
-                    <p>
-                      Active Customers:{" "}
-                      {region.stats.activeCustomers.toLocaleString()}
-                    </p>
-                    <p>Today's Swaps: {region.stats.swapsToday}</p>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-        )}
-
-        {selectedRegion && !selectedCircle && (
-          <motion.div
-            key="region"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <RegionOverview region={selectedRegion} />
-          </motion.div>
-        )}
-
-        {selectedCircle && !selectedCity && (
-          <motion.div
-            key="circle"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <CircleOverview circle={selectedCircle} />
-          </motion.div>
-        )}
-
-        {selectedCity && (
-          <motion.div
-            key="city"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <CityOverview city={selectedCity} />
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Bottom Navigation Bar for Mobile */}
-      <div className="md:hidden fixed bottom-0 left-0 w-full z-50">
-        <BottomNavBar />
-      </div>
-    </div>
-  );
-
-  // ---------- Final Render ----------
-  if (fullAccessRoles.includes(user.role) || circleAccessRoles.includes(user.role))
-    return renderHierarchyDashboard();
-
-  if (taskBasedRoles.includes(user.role))
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-green-50 p-8 pb-20 md:pb-8">
-        <div className="max-w-6xl mx-auto">
-          <h1 className="text-3xl font-bold text-gray-800 mb-6">
-            ⚡ Operations Dashboard
-          </h1>
-          <p className="text-gray-600 mb-8">Welcome, {user.role}</p>
-          <div className="bg-white p-6 rounded-xl shadow-md">
-            <h2 className="text-xl font-semibold mb-4">
-              {user.role === "Technician" ? "Assigned Maintenance Tasks" : "Open Support Tickets"}
-            </h2>
-            <div className="space-y-4">
-              {user.role === "Technician" ? (
-                <>
-                  <div className="p-4 border border-amber-200 bg-amber-50 rounded-lg">
-                    <h3 className="font-semibold">Battery station #12 – Cooling fan check</h3>
-                    <p className="text-sm text-gray-600">Due: Today</p>
-                  </div>
-                  <div className="p-4 border border-blue-200 bg-blue-50 rounded-lg">
-                    <h3 className="font-semibold">Cluster C2 – Terminal issue</h3>
-                    <p className="text-sm text-gray-600">Due: Tomorrow</p>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="p-4 border border-red-200 bg-red-50 rounded-lg">
-                    <h3 className="font-semibold">User swap delay in East Region – Pending</h3>
-                    <p className="text-sm text-gray-600">Opened: 2 hours ago</p>
-                  </div>
-                  <div className="p-4 border border-amber-200 bg-amber-50 rounded-lg">
-                    <h3 className="font-semibold">Recharge mismatch – Escalated</h3>
-                    <p className="text-sm text-gray-600">Opened: 1 day ago</p>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Bottom Navigation Bar for Mobile */}
-        <div className="md:hidden fixed bottom-0 left-0 w-full z-50">
-          <BottomNavBar />
-        </div>
-      </div>
-    );
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-green-50 flex items-center justify-center text-center p-8 pb-20 md:pb-8">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-800 mb-4">
-          Access Restricted
-        </h1>
-        <p className="text-gray-600">
-          Your role ({user.role}) does not have access to this dashboard.
-        </p>
-      </div>
-
-      {/* Bottom Navigation Bar for Mobile */}
-      <div className="md:hidden fixed bottom-0 left-0 w-full z-50">
-        <BottomNavBar />
-      </div>
-    </div>
-  );
-if (user.role !== "Admin" && user.role !== "Sales Head") {
-  alert("Access denied: You don’t have permission to view this page.");
-  router.push("/home");
+/* ---------- Helpers ---------- */
+function formatMoney(n) {
+  if (!n && n !== 0) return "—";
+  if (n >= 1e7) return `₹${(n / 1e7).toFixed(1)} Cr`;
+  if (n >= 1e5) return `₹${(n / 1e5).toFixed(1)} L`;
+  return `₹${n?.toLocaleString('en-IN')}`;
 }
 
+function formatNumber(n) {
+  if (!n && n !== 0) return "—";
+  return n?.toLocaleString('en-IN');
+}
+
+function toSeries(arr = []) {
+  return (arr || []).map((v, i) => ({ name: `M${i + 1}`, value: v }));
+}
+
+function exportRegionCSV(region) {
+  const rows = [["circle", "revenue", "swaps", "uptime", "stations", "customers"]];
+  (region.circles || []).forEach((c) =>
+    rows.push([
+      c.name,
+      c.metrics.revenue ?? 0,
+      c.metrics.swaps ?? 0,
+      c.metrics.uptime ?? 0,
+      c.metrics.stations ?? 0,
+      c.metrics.customers ?? 0,
+    ])
+  );
+  const csv = rows.map((r) => r.join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  saveAs(blob, `${region.id || "region"}-circles.csv`);
+}
+
+function exportRegionPDF(region) {
+  const doc = new jsPDF();
+  doc.setFontSize(14);
+  doc.text(`${region.name} — Circles Report`, 12, 18);
+  doc.setFontSize(11);
+  doc.text(`Total Revenue: ${formatMoney(region.metrics.revenue)}`, 12, 28);
+  doc.text(`Total Swaps: ${formatNumber(region.metrics.swaps)}`, 12, 36);
+  doc.save(`${region.id || "region"}-report.pdf`);
+}
+
+/* ---------- Component ---------- */
+export default function RegionalDashboard() {
+  const router = useRouter();
+  const regions = useMemo(() => REGIONS || [], []);
+  const { user } = useRole();
+
+  // State for mobile responsiveness
+  const [isMobile, setIsMobile] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // role logic
+  const roleRaw = (user?.role || "").toLowerCase();
+  const roleIsRegional = /regional|regional head|admin/.test(roleRaw);
+  const roleIsCircle = /circle|circle head/.test(roleRaw);
+  const roleIsCity = /city|ops|technician|support/.test(roleRaw);
+
+  const [selectedRegionId, setSelectedRegionId] = useState(null);
+  const selectedRegion = selectedRegionId ? findRegionById(selectedRegionId) : null;
+
+  // Check mobile screen size
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  const companySummary = useMemo(() => {
+    const revenue = regions.reduce((s, r) => s + (r.metrics?.revenue || 0), 0);
+    const swaps = regions.reduce((s, r) => s + (r.metrics?.swaps || 0), 0);
+    const stations = regions.reduce((s, r) => s + (r.metrics?.stations || 0), 0);
+    const customers = regions.reduce((s, r) => s + (r.metrics?.customers || 0), 0);
+    const avgUptime =
+      regions.length > 0
+        ? +(regions.reduce((s, r) => s + (r.metrics?.uptime || 0), 0) / regions.length).toFixed(1)
+        : 0;
+    return { revenue, swaps, stations, customers, avgUptime };
+  }, [regions]);
+
+  const openRegion = useCallback(
+    (r) => {
+      if (!r) return;
+      if (roleIsRegional || roleIsCircle) {
+        setSelectedRegionId(r.id);
+        setMobileMenuOpen(false);
+      } else {
+        alert("You don't have permission to open this region.");
+      }
+    },
+    [roleIsRegional, roleIsCircle]
+  );
+
+  const circleColumns = [
+    { key: "name", label: "Circle" },
+    { key: "revenue", label: "Revenue", render: (r) => formatMoney(r.metrics?.revenue) },
+    { key: "swaps", label: "Swaps", render: (r) => formatNumber(r.metrics?.swaps || 0) },
+    { key: "uptime", label: "Uptime", render: (r) => `${r.metrics?.uptime ?? 0}%` },
+    { key: "stations", label: "Stations", render: (r) => r.metrics?.stations ?? 0 },
+    {
+      key: "action",
+      label: "Action",
+      render: (r) => (
+        <div className="flex items-center gap-2">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (roleIsRegional || roleIsCircle) {
+                router.push(`/user-management/region/${selectedRegion?.id}/circle/${r.id}`);
+              } else {
+                alert("You don't have permission to open this circle.");
+              }
+            }}
+            className="text-sm text-emerald-700 underline px-2 py-1"
+          >
+            View
+          </button>
+        </div>
+      ),
+    },
+  ];
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-green-50 p-4 sm:p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+          <div className="flex items-center justify-between sm:block">
+            <div>
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-emerald-700">
+                Regional Operations
+              </h1>
+              <p className="text-gray-600 mt-1 text-sm sm:text-base max-w-xl">
+                Enterprise dashboard for monitoring swaps, stations, and revenue.
+              </p>
+            </div>
+            
+            {/* Mobile menu button */}
+            {isMobile && (
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="p-2 rounded-md bg-emerald-100 text-emerald-700 sm:hidden"
+              >
+                {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+              </button>
+            )}
+          </div>
+
+          {/* User info and actions - hidden on mobile when menu is closed */}
+          <div className={`${isMobile && !mobileMenuOpen ? 'hidden' : 'flex'} flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4`}>
+            <div className="flex items-center gap-3">
+              <div className="text-xs text-gray-500">Signed in as</div>
+              <div className="text-sm text-emerald-700 truncate max-w-[120px] sm:max-w-none">
+                {user?.email ?? "Guest"}
+              </div>
+            </div>
+
+            {roleIsRegional && (
+              <button
+                onClick={() => router.push(selectedRegion?.id ? `/user-management/region/${selectedRegion.id}` : "/user-management")}
+                className="px-3 py-2 rounded-md bg-emerald-600 text-white text-sm mt-2 sm:mt-0"
+              >
+                Manage Users
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* KPI Cards - Stack on mobile */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+          <AnalyticsCard 
+            title="Total Revenue" 
+            value={formatMoney(companySummary.revenue)} 
+            hint="All regions combined" 
+          />
+          <AnalyticsCard 
+            title="Total Swaps" 
+            value={formatNumber(companySummary.swaps)} 
+            hint="Total swap transactions" 
+          />
+          <AnalyticsCard 
+            title="Network Uptime" 
+            value={`${companySummary.avgUptime}%`} 
+            hint="Average uptime" 
+          />
+          <AnalyticsCard 
+            title="Stations" 
+            value={formatNumber(companySummary.stations)} 
+            hint="Total swap stations" 
+          />
+          <AnalyticsCard 
+            title="Customers" 
+            value={formatNumber(companySummary.customers)} 
+            hint="Active customers" 
+          />
+        </div>
+
+        {/* Regions */}
+        <section>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-gray-700">Regions</h2>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+            {regions.map((r) => (
+              <div 
+                key={r.id} 
+                className="bg-white rounded-2xl p-4 border shadow-sm hover:shadow-md transition-all"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs text-gray-500">Region</div>
+                    <div className="text-lg font-semibold text-emerald-800 mt-1 truncate">
+                      {r.name}
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1 truncate">
+                      Head: {r.head}
+                    </div>
+                  </div>
+
+                  <div className="text-right flex-shrink-0">
+                    <div className="text-sm text-gray-500">Revenue</div>
+                    <div className="text-xl font-bold text-green-600">
+                      {formatMoney(r.metrics.revenue)}
+                    </div>
+                    <div className="text-xs text-gray-400 mt-1">
+                      {formatNumber(r.metrics.swaps)} swaps
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-4 grid grid-cols-1 gap-3">
+                  <div className="bg-emerald-50/60 rounded-lg p-3 flex items-center justify-between">
+                    <div className="text-xs text-gray-600">Uptime</div>
+                    <div className="text-sm font-semibold text-emerald-700">
+                      {r.metrics.uptime}%
+                    </div>
+                  </div>
+
+                  <div className="bg-white rounded-lg p-2 border border-emerald-50">
+                    <div className="h-20">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={toSeries(r.series)}>
+                          <Line 
+                            dataKey="value" 
+                            stroke="#059669" 
+                            strokeWidth={2} 
+                            dot={false} 
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-4 flex items-center justify-between">
+                  <div className="text-xs text-gray-500">
+                    {(r.circles || []).length} circles
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => openRegion(r)}
+                      className="px-3 py-1 rounded-md text-sm bg-emerald-600 text-white flex items-center gap-1"
+                    >
+                      Open <ArrowRight size={14} />
+                    </button>
+
+                    {(roleIsRegional || roleIsCircle) && (
+                      <button
+                        onClick={() => exportRegionCSV(r)}
+                        className="px-2 py-1 border rounded-md text-sm text-xs"
+                      >
+                        CSV
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Selected Region Details */}
+        {selectedRegion && (
+          <section className="mt-6 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                <h2 className="text-xl font-semibold text-emerald-800 truncate">
+                  Region — {selectedRegion.name}
+                </h2>
+                <div className="text-xs text-gray-500">Circles overview & analytics</div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {(roleIsRegional || roleIsCircle) && (
+                  <>
+                    <button
+                      onClick={() => exportRegionCSV(selectedRegion)}
+                      className="px-3 py-2 bg-white border rounded-md text-sm flex-1 sm:flex-none text-center"
+                    >
+                      Export CSV
+                    </button>
+                    <button
+                      onClick={() => exportRegionPDF(selectedRegion)}
+                      className="px-3 py-2 bg-emerald-600 text-white rounded-md text-sm flex-1 sm:flex-none text-center"
+                    >
+                      Export PDF
+                    </button>
+                  </>
+                )}
+                <button
+                  onClick={() => setSelectedRegionId(null)}
+                  className="px-3 py-2 bg-white border rounded-md text-sm flex-1 sm:flex-none text-center"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+              <AnalyticsCard 
+                title="Revenue" 
+                value={formatMoney(selectedRegion.metrics.revenue)} 
+                hint="Region total revenue" 
+              />
+              <AnalyticsCard 
+                title="Swaps" 
+                value={formatNumber(selectedRegion.metrics.swaps)} 
+                hint="Total swaps" 
+              />
+              <AnalyticsCard 
+                title="Stations" 
+                value={formatNumber(selectedRegion.metrics.stations)} 
+                hint="Total stations" 
+              />
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+              <div className="lg:col-span-2 bg-white rounded-2xl p-4 border shadow-sm">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2 gap-2">
+                  <div className="font-semibold text-gray-700">Sales by Circle</div>
+                  <div className="text-xs text-gray-500">Period: last 6 months</div>
+                </div>
+                <div className="h-56 sm:h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={(selectedRegion.circles || []).map((c) => ({
+                        name: c.name.length > 8 ? c.name.substring(0, 8) + '...' : c.name,
+                        revenue: c.metrics.revenue,
+                      }))}
+                    >
+                      <XAxis dataKey="name" angle={isMobile ? -45 : 0} textAnchor={isMobile ? "end" : "middle"} />
+                      <YAxis />
+                      <Tooltip />
+                      <Bar dataKey="revenue" fill="#10B981" radius={[6, 6, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-2xl p-4 border shadow-sm">
+                <div className="font-semibold text-gray-700 mb-2">Circle list</div>
+                <div className="max-h-64 sm:max-h-80 overflow-auto">
+                  <DataTable
+                    columns={circleColumns}
+                    rows={selectedRegion.circles || []}
+                    onRowClick={(row) => {
+                      if (roleIsRegional || roleIsCircle) {
+                        router.push(`/user-management/region/${selectedRegion?.id}/circle/${row.id}`);
+                      } else {
+                        alert("You don't have permission to open this circle.");
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+      </div>
+      <BottomNavBar />
+    </div>
+  );
 }
