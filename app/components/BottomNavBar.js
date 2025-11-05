@@ -9,15 +9,23 @@ import {
   Wrench,
   User,
 } from "lucide-react";
+import { useEffect, useState } from "react";
 
 export default function BottomNavBar() {
   const pathname = usePathname();
   const router = useRouter();
+  const [user, setUser] = useState(null);
 
-  // hide on login/signup pages
+  useEffect(() => {
+    const storedUser = JSON.parse(localStorage.getItem("user"));
+    if (storedUser) setUser(storedUser);
+  }, []);
+
+  // Hide on login/signup pages
   if (pathname === "/" || pathname === "/login" || pathname === "/signup")
     return null;
 
+  // ✅ All nav items
   const navItems = [
     { href: "/home", label: "Home", icon: Home },
     { href: "/assets", label: "Assets", icon: Package },
@@ -25,6 +33,30 @@ export default function BottomNavBar() {
     { href: "/workorders", label: "Work", icon: Wrench },
     { href: "/profile", label: "Profile", icon: User },
   ];
+
+  // ✅ Role-based filtering
+  let allowedItems = navItems;
+  if (user) {
+    switch (user.role) {
+      case "Admin":
+        allowedItems = navItems;
+        break;
+      case "Sales Head":
+        allowedItems = navItems.filter(({ label }) =>
+          ["Home", "Assets", "Profile"].includes(label)
+        );
+        break;
+      case "Operations Head":
+        allowedItems = navItems.filter(({ label }) =>
+          ["Home", "Work", "Profile"].includes(label)
+        );
+        break;
+      default:
+        allowedItems = navItems.filter(({ label }) =>
+          ["Home", "Profile"].includes(label)
+        );
+    }
+  }
 
   return (
     <motion.nav
@@ -35,9 +67,8 @@ export default function BottomNavBar() {
       bg-white/95 backdrop-blur-xl shadow-lg border border-emerald-100 
       rounded-full flex justify-center items-center py-1 px-2 z-60"
     >
-      {navItems.map(({ href, label, icon: Icon }) => {
+      {allowedItems.map(({ href, label, icon: Icon }) => {
         const isActive = pathname === href;
-
         return (
           <motion.button
             key={href}

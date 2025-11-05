@@ -490,4 +490,9 @@ export default function PlansPage() {
       </div>
     </div>
   );
+if (user.role !== "Admin" && user.role !== "Sales Head") {
+  alert("Access denied: You don’t have permission to view this page.");
+  router.push("/home");
+}
+
 }

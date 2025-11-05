@@ -1,20 +1,12 @@
 users:
-  - email: admin@voltup.com
-    password: voltup123
+  - email: abhishek@voltup.in
+    password: abhishek123
     role: Admin
 
-  - email: tech@voltup.com
-    password: tech123
-    role: Technician
+  - email: rahul@voltup.in
+    password: rahul123
+    role: Operations Head
 
-  - email: support@voltup.com
-    password: support123
-    role: Support
-
-  - email: regional@voltup.com
-    password: region123
-    role: Regional Head
-
-  - email: circle@voltup.com
-    password: circle123
-    role: Circle Head
+  - email: riya@voltup.in
+    password: riya123
+    role: Sales Head

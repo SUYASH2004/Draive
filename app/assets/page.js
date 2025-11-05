@@ -1,7 +1,9 @@
 "use client";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
-import BottomNavBar from "../components/BottomNavBar"; // ✅ Added
+import BottomNavBar from "../components/BottomNavBar";
 import {
   Car,
   Battery,
@@ -14,7 +16,6 @@ import {
   Wrench,
   Truck,
 } from "lucide-react";
-import { useState } from "react";
 import {
   PieChart,
   Pie,
@@ -46,8 +47,28 @@ const trendData = [
 ];
 
 export default function AssetsPage() {
+  const router = useRouter();
+  const [user, setUser] = useState(null);
   const [activeTab, setActiveTab] = useState("Vehicles");
   const [selectedFilters, setSelectedFilters] = useState([]);
+
+  /* ✅ Load user from localStorage + Access Control */
+  useEffect(() => {
+    const storedUser = JSON.parse(localStorage.getItem("user"));
+    if (!storedUser) {
+      router.push("/login");
+      return;
+    }
+
+    setUser(storedUser);
+
+    if (storedUser.role !== "Admin" && storedUser.role !== "Sales Head") {
+      alert("Access denied: You don’t have permission to view this page.");
+      router.push("/home");
+    }
+  }, [router]);
+
+  if (!user) return null; // Avoid rendering until user is ready
 
   const vehicleStats = {
     total: 3194,
@@ -78,7 +99,7 @@ export default function AssetsPage() {
       <Sidebar />
 
       <div className="flex-1 flex flex-col md:ml-[260px]">
-        <Navbar />
+        <Navbar user={user} />
 
         <main className="p-8 pb-24 md:pb-8 transition-all duration-300">
           <h2 className="text-3xl font-bold text-gray-800">
